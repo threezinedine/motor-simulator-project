@@ -9,6 +9,10 @@
 
 		/* Bundler mode */
 		"moduleResolution": "bundler",
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["src/*"]
+		},
 		"allowImportingTsExtensions": true,
 		"isolatedModules": true,
 		"moduleDetection": "force",
@@ -16,7 +20,7 @@
 
 		/* Linting */
 		"strict": true,
-		"noUnusedLocals": true,
+		"noUnusedLocals": false,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true
 	},

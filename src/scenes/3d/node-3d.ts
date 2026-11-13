@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { NodeBase } from '../scenes/node-base';
-import { Vector3, Euler } from '../types';
+import { NodeBase } from '@/scenes/node-base';
+import { Vector3, Euler } from '@/types';
 
 export class Node3D extends NodeBase {
 	private _selfPosition: Vector3 = { x: 0, y: 0, z: 0 };

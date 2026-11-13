@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { NodeBase } from './node-base';
+import { NodeBase } from '@/scenes/node-base';
 import { Node3D } from './node-3d';
 
 class TestNode3D extends Node3D {

@@ -1,4 +1,4 @@
-import { ObjectBase } from '../common';
+import { ObjectBase } from '@/common';
 
 export class NodeBase extends ObjectBase {
 	private _parent: NodeBase | null = null;
