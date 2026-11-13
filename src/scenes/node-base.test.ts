@@ -5,6 +5,12 @@ class TestNode extends NodeBase {
 	public addedChildren: NodeBase[] = [];
 	public removedChildren: NodeBase[] = [];
 	public parentHistory: (NodeBase | null)[] = [];
+	public selfEnableCount = 0;
+	public selfDisableCount = 0;
+	public enableCount = 0;
+	public disableCount = 0;
+	public activateCount = 0;
+	public deactivateCount = 0;
 
 	protected override onChildAdded_Impl(child: NodeBase): void {
 		this.addedChildren.push(child);
@@ -16,6 +22,30 @@ class TestNode extends NodeBase {
 
 	protected override onParentChanged_Impl(newParent: NodeBase | null): void {
 		this.parentHistory.push(newParent);
+	}
+
+	protected override onSelfEnable_Impl(): void {
+		this.selfEnableCount++;
+	}
+
+	protected override onSelfDisable_Impl(): void {
+		this.selfDisableCount++;
+	}
+
+	protected override onEnable_Impl(): void {
+		this.enableCount++;
+	}
+
+	protected override onDisable_Impl(): void {
+		this.disableCount++;
+	}
+
+	protected override onActivate_Impl(): void {
+		this.activateCount++;
+	}
+
+	protected override onDeactivate_Impl(): void {
+		this.deactivateCount++;
 	}
 }
 
@@ -33,9 +63,13 @@ describe('NodeBase', () => {
 	});
 
 	describe('initial state', () => {
-		it('initializes with null Parent, empty Children, and null pointers', () => {
+		it('initializes with null Parent, empty Children, enabled, inactive/non-root, and null pointers', () => {
 			expect(parent.Parent).toBeNull();
 			expect(parent.Children).toEqual([]);
+			expect(parent.IsSelfEnable).toBe(true);
+			expect(parent.IsEnable).toBe(true);
+			expect(parent.IsRoot).toBe(false);
+			expect(parent.IsActive).toBe(false);
 			expect(parent.getFirstChild()).toBeNull();
 			expect(parent.getSiblingNode()).toBeNull();
 		});
@@ -96,9 +130,7 @@ describe('NodeBase', () => {
 			parent.addChild(child1);
 			child1.addChild(child2);
 
-			// Direct parent into child
 			child1.addChild(parent);
-			// Root ancestor into deeper descendant
 			child2.addChild(parent);
 
 			expect(parent.Parent).toBeNull();
@@ -226,6 +258,276 @@ describe('NodeBase', () => {
 			expect(parent.isAncestorOf(parent)).toBe(false);
 			expect(child2.isAncestorOf(parent)).toBe(false);
 			expect(parent.isAncestorOf(child3)).toBe(false);
+		});
+	});
+
+	describe('Enable & Disable (standalone node)', () => {
+		it('is a no-op when calling Enable on an already self-enabled node', () => {
+			parent.Enable();
+
+			expect(parent.IsSelfEnable).toBe(true);
+			expect(parent.IsEnable).toBe(true);
+			expect(parent.selfEnableCount).toBe(0);
+			expect(parent.enableCount).toBe(0);
+		});
+
+		it('disables a self-enabled node and invokes onSelfDisable then onDisable', () => {
+			const callOrder: string[] = [];
+			vi.spyOn(parent, 'onSelfDisable').mockImplementation(() => {
+				callOrder.push('onSelfDisable');
+				parent['onSelfDisable_Impl']();
+			});
+			vi.spyOn(parent, 'onDisable').mockImplementation(() => {
+				callOrder.push('onDisable');
+				parent['onDisable_Impl']();
+			});
+
+			parent.Disable();
+
+			expect(parent.IsSelfEnable).toBe(false);
+			expect(parent.IsEnable).toBe(false);
+			expect(callOrder).toEqual(['onSelfDisable', 'onDisable']);
+			expect(parent.selfDisableCount).toBe(1);
+			expect(parent.disableCount).toBe(1);
+		});
+
+		it('is a no-op when calling Disable on an already self-disabled node', () => {
+			parent.Disable();
+			parent.Disable();
+
+			expect(parent.selfDisableCount).toBe(1);
+			expect(parent.disableCount).toBe(1);
+		});
+
+		it('re-enables a self-disabled node and invokes onSelfEnable then onEnable', () => {
+			parent.Disable();
+
+			const callOrder: string[] = [];
+			vi.spyOn(parent, 'onSelfEnable').mockImplementation(() => {
+				callOrder.push('onSelfEnable');
+				parent['onSelfEnable_Impl']();
+			});
+			vi.spyOn(parent, 'onEnable').mockImplementation(() => {
+				callOrder.push('onEnable');
+				parent['onEnable_Impl']();
+			});
+
+			parent.Enable();
+
+			expect(parent.IsSelfEnable).toBe(true);
+			expect(parent.IsEnable).toBe(true);
+			expect(callOrder).toEqual(['onSelfEnable', 'onEnable']);
+			expect(parent.selfEnableCount).toBe(1);
+			expect(parent.enableCount).toBe(1);
+		});
+	});
+
+	describe('Enable & Disable (hierarchy propagation)', () => {
+		it('disables effective IsEnable on descendants while preserving their IsSelfEnable', () => {
+			parent.addChild(child1);
+			child1.addChild(child2);
+
+			parent.Disable();
+
+			expect(parent.IsSelfEnable).toBe(false);
+			expect(parent.IsEnable).toBe(false);
+
+			expect(child1.IsSelfEnable).toBe(true);
+			expect(child1.IsEnable).toBe(false);
+			expect(child1.selfDisableCount).toBe(0);
+			expect(child1.disableCount).toBe(1);
+
+			expect(child2.IsSelfEnable).toBe(true);
+			expect(child2.IsEnable).toBe(false);
+			expect(child2.selfDisableCount).toBe(0);
+			expect(child2.disableCount).toBe(1);
+		});
+
+		it('re-enables effective IsEnable on self-enabled descendants when parent re-enables', () => {
+			parent.addChild(child1);
+			child1.addChild(child2);
+			parent.Disable();
+
+			parent.Enable();
+
+			expect(child1.IsEnable).toBe(true);
+			expect(child1.selfEnableCount).toBe(0);
+			expect(child1.enableCount).toBe(1);
+
+			expect(child2.IsEnable).toBe(true);
+			expect(child2.selfEnableCount).toBe(0);
+			expect(child2.enableCount).toBe(1);
+		});
+
+		it('stops propagation at descendants whose IsSelfEnable is false', () => {
+			parent.addChild(child1);
+			child1.addChild(child2);
+
+			child1.Disable();
+			expect(child1.disableCount).toBe(1);
+			expect(child2.disableCount).toBe(1);
+
+			parent.Disable();
+			expect(child1.disableCount).toBe(1);
+			expect(child2.disableCount).toBe(1);
+
+			parent.Enable();
+			expect(child1.IsSelfEnable).toBe(false);
+			expect(child1.IsEnable).toBe(false);
+			expect(child2.IsSelfEnable).toBe(true);
+			expect(child2.IsEnable).toBe(false);
+			expect(child1.enableCount).toBe(0);
+			expect(child2.enableCount).toBe(0);
+		});
+
+		it('updates only IsSelfEnable (without firing onEnable/onDisable) when toggling a child under a disabled parent', () => {
+			parent.Disable();
+			parent.addChild(child1);
+			child1.disableCount = 0;
+
+			child1.Disable();
+			expect(child1.IsSelfEnable).toBe(false);
+			expect(child1.IsEnable).toBe(false);
+			expect(child1.selfDisableCount).toBe(1);
+			expect(child1.disableCount).toBe(0);
+
+			child1.Enable();
+			expect(child1.IsSelfEnable).toBe(true);
+			expect(child1.IsEnable).toBe(false);
+			expect(child1.selfEnableCount).toBe(1);
+			expect(child1.enableCount).toBe(0);
+		});
+
+		it('fires onDisable on an enabled subtree when added to a disabled parent', () => {
+			parent.Disable();
+			child1.addChild(child2);
+
+			parent.addChild(child1);
+
+			expect(child1.IsSelfEnable).toBe(true);
+			expect(child1.IsEnable).toBe(false);
+			expect(child1.disableCount).toBe(1);
+
+			expect(child2.IsSelfEnable).toBe(true);
+			expect(child2.IsEnable).toBe(false);
+			expect(child2.disableCount).toBe(1);
+		});
+
+		it('does not fire onEnable/onDisable when adding an enabled child to an enabled parent', () => {
+			parent.addChild(child1);
+
+			expect(child1.IsEnable).toBe(true);
+			expect(child1.enableCount).toBe(0);
+			expect(child1.disableCount).toBe(0);
+		});
+
+		it('restores effective IsEnable and fires onEnable when removing a self-enabled child from a disabled parent', () => {
+			parent.Disable();
+			parent.addChild(child1);
+			child1.addChild(child2);
+
+			parent.removeChild(child1);
+
+			expect(child1.IsEnable).toBe(true);
+			expect(child1.enableCount).toBe(1);
+			expect(child2.IsEnable).toBe(true);
+			expect(child2.enableCount).toBe(1);
+		});
+	});
+
+	describe('IsActive & asRoot (scene tree activation)', () => {
+		it('marks a parentless node as root, sets IsActive to true, and propagates onActivate to all descendants (including disabled ones)', () => {
+			parent.addChild(child1);
+			child1.addChild(child2);
+			child2.Disable();
+
+			parent.asRoot();
+
+			expect(parent.IsRoot).toBe(true);
+			expect(parent.IsActive).toBe(true);
+			expect(parent.activateCount).toBe(1);
+
+			expect(child1.IsRoot).toBe(false);
+			expect(child1.IsActive).toBe(true);
+			expect(child1.activateCount).toBe(1);
+
+			expect(child2.IsActive).toBe(true);
+			expect(child2.IsEnable).toBe(false);
+			expect(child2.activateCount).toBe(1);
+		});
+
+		it('is a no-op when calling asRoot on a node that is already a root or has a parent', () => {
+			parent.addChild(child1);
+
+			// Child with a parent cannot become a root
+			child1.asRoot();
+			expect(child1.IsRoot).toBe(false);
+			expect(child1.IsActive).toBe(false);
+			expect(child1.activateCount).toBe(0);
+
+			// Calling asRoot twice on root only activates once
+			parent.asRoot();
+			parent.asRoot();
+			expect(parent.activateCount).toBe(1);
+		});
+
+		it('prevents a root node from being added as a child of another node', () => {
+			child1.asRoot();
+
+			parent.addChild(child1);
+
+			expect(child1.Parent).toBeNull();
+			expect(parent.Children).toEqual([]);
+			expect(child1.IsRoot).toBe(true);
+			expect(child1.IsActive).toBe(true);
+		});
+
+		it('activates an inactive subtree when added to an active parent', () => {
+			parent.asRoot();
+			child1.addChild(child2);
+
+			parent.addChild(child1);
+
+			expect(child1.IsActive).toBe(true);
+			expect(child1.activateCount).toBe(1);
+			expect(child2.IsActive).toBe(true);
+			expect(child2.activateCount).toBe(1);
+		});
+
+		it('does not fire onActivate/onDeactivate when adding or removing children within an inactive tree', () => {
+			parent.addChild(child1);
+			parent.removeChild(child1);
+
+			expect(child1.IsActive).toBe(false);
+			expect(child1.activateCount).toBe(0);
+			expect(child1.deactivateCount).toBe(0);
+		});
+
+		it('deactivates an active subtree and fires onDeactivate when removed from an active parent', () => {
+			parent.asRoot();
+			parent.addChild(child1);
+			child1.addChild(child2);
+
+			parent.removeChild(child1);
+
+			expect(child1.IsActive).toBe(false);
+			expect(child1.deactivateCount).toBe(1);
+			expect(child2.IsActive).toBe(false);
+			expect(child2.deactivateCount).toBe(1);
+		});
+
+		it('fires onDeactivate then onActivate when reparenting a child from one active tree to another', () => {
+			const otherRoot = new TestNode();
+			parent.asRoot();
+			otherRoot.asRoot();
+			parent.addChild(child1);
+
+			otherRoot.addChild(child1);
+
+			expect(child1.Parent).toBe(otherRoot);
+			expect(child1.IsActive).toBe(true);
+			expect(child1.activateCount).toBe(2);
+			expect(child1.deactivateCount).toBe(1);
 		});
 	});
 });
