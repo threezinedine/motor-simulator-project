@@ -66,7 +66,7 @@ export class Camera3DServer extends ServerBase<Camera3D> {
 		}
 	}
 
-	update(): void {
+	protected override _update(_deltaTime: number): void {
 		const activeCamera = this.ActiveCamera;
 		if (activeCamera) {
 			activeCamera.update();

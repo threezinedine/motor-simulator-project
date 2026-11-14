@@ -1,4 +1,3 @@
-import * as THREE from 'three';
 import {
 	SceneManager,
 	Node3D,
@@ -16,8 +15,14 @@ import {
 	Texture2DServer,
 } from '@/index';
 
-// Register node types with their corresponding servers
+// Register servers & node types with their corresponding servers
 const sceneManager = SceneManager.Instance;
+sceneManager.registerServer(Camera3DServer);
+sceneManager.registerServer(Camera2DServer);
+sceneManager.registerServer(MeshServer);
+sceneManager.registerServer(LightServer);
+sceneManager.registerServer(Texture2DServer);
+
 sceneManager.registerNode(Camera3D, Camera3DServer);
 sceneManager.registerNode(Camera2D, Camera2DServer);
 sceneManager.registerNode(Mesh, MeshServer);
@@ -94,49 +99,10 @@ const directionalLightNode = new Light({
 directionalLightNode.setPosition(5, 5, 5);
 rootNode.addChild(directionalLightNode);
 
-// Retrieve active servers
-const meshServer = sceneManager.getServer(MeshServer)!;
-const cameraServer = sceneManager.getServer(Camera3DServer)!;
-const camera2DServer = sceneManager.getServer(Camera2DServer)!;
-const texture2DServer = sceneManager.getServer(Texture2DServer)!;
-const threeScene = meshServer.ThreeScene;
-const threeScene2D = texture2DServer.ThreeScene;
-
-// Renderer
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.autoClear = false;
-document.body.appendChild(renderer.domElement);
-
-// Handle window resize
-window.addEventListener('resize', () => {
-	cameraServer.setAspect(window.innerWidth / window.innerHeight);
-	camera2DServer.setViewportSize(window.innerWidth, window.innerHeight);
-	sampleTextureNode.setPosition(
-		window.innerWidth / 2 - 48,
-		window.innerHeight / 2 - 48
-	);
-	renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
-	cameraServer.update();
-
-	renderer.clear();
-
-	const currentCamera = cameraServer.ActiveCamera;
-	if (currentCamera) {
-		renderer.render(threeScene, currentCamera.ThreeCamera);
-	}
-
-	const currentCamera2D = camera2DServer.ActiveCamera;
-	if (currentCamera2D) {
-		renderer.clearDepth();
-		renderer.render(threeScene2D, currentCamera2D.ThreeCamera);
-	}
+	sceneManager.update();
 }
 
 animate();

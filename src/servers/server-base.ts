@@ -52,4 +52,9 @@ export class ServerBase<T extends NodeBase = NodeBase> extends ObjectBase {
 		this._onNodeRemoved(node);
 	}
 	protected _onNodeRemoved(_node: T): void {}
+
+	update(deltaTime = 0): void {
+		this._update(deltaTime);
+	}
+	protected _update(_deltaTime: number): void {}
 }

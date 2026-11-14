@@ -25,6 +25,8 @@ class HybridNode extends RenderNode {
 class RenderServer extends ServerBase<RenderNode> {
 	public added: RenderNode[] = [];
 	public removed: RenderNode[] = [];
+	public updateCount = 0;
+	public lastDelta = 0;
 
 	constructor() {
 		super('RenderServer');
@@ -36,6 +38,11 @@ class RenderServer extends ServerBase<RenderNode> {
 
 	protected override _onNodeRemoved(node: RenderNode): void {
 		this.removed.push(node);
+	}
+
+	protected override _update(deltaTime: number): void {
+		this.updateCount += 1;
+		this.lastDelta = deltaTime;
 	}
 }
 
@@ -243,6 +250,28 @@ describe('SceneManager', () => {
 			expect(
 				manager.unregisterNode(RenderNode, PhysicsServer).status
 			).toBe(ResultStatus.FAILURE);
+		});
+	});
+
+	describe('registerServer, unregisterServer & update', () => {
+		it('registers and unregisters servers directly and updates all registered servers on SceneManager.update()', () => {
+			const regRes = manager.registerServer(RenderServer);
+			expect(isResultSuccess(regRes)).toBe(true);
+			expect(manager.hasServer(RenderServer)).toBe(true);
+
+			const renderServer = manager.getServer(RenderServer)!;
+			expect(renderServer).toBeInstanceOf(RenderServer);
+
+			manager.update(0.016);
+			expect(renderServer.updateCount).toBe(1);
+			expect(renderServer.lastDelta).toBeCloseTo(0.016);
+
+			const unregRes = manager.unregisterServer(RenderServer);
+			expect(isResultSuccess(unregRes)).toBe(true);
+			expect(manager.hasServer(RenderServer)).toBe(false);
+			expect(manager.unregisterServer(RenderServer).status).toBe(
+				ResultStatus.FAILURE
+			);
 		});
 	});
 });

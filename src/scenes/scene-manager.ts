@@ -1,6 +1,8 @@
 import { ObjectBase } from '@/common';
 import type { NodeBase } from './node-base';
 import { ServerBase } from '@/servers';
+import { Renderer3D } from '@/render/3d/renderer-3d';
+import { Renderer2D } from '@/render/2d/renderer-2d';
 import {
 	ObjectConstructor,
 	Result,
@@ -45,6 +47,10 @@ export class SceneManager extends ObjectBase {
 		return this._activeNodes;
 	}
 
+	get Servers(): ReadonlyMap<ObjectConstructor<ServerBase>, ServerBase> {
+		return this._servers;
+	}
+
 	setRootNode(root: NodeBase): Result {
 		if (root.Parent) {
 			return {
@@ -56,6 +62,67 @@ export class SceneManager extends ObjectBase {
 		this._rootNode = root;
 		root.asRoot();
 		return RESULT_SUCCESS;
+	}
+
+	registerServer<K extends ServerBase>(
+		serverType: ObjectConstructor<K>,
+		serverInstance?: K
+	): Result {
+		if (serverInstance) {
+			this._servers.set(serverType, serverInstance);
+			return RESULT_SUCCESS;
+		}
+		this.ensureServer(serverType);
+		return RESULT_SUCCESS;
+	}
+
+	unregisterServer<K extends ServerBase>(
+		serverType: ObjectConstructor<K>
+	): Result {
+		const server = this._servers.get(serverType);
+		if (!server) {
+			return {
+				status: ResultStatus.FAILURE,
+				errorMessage: `Server '${serverType.name}' is not registered.`,
+			};
+		}
+
+		server.clearNodes();
+		this._servers.delete(serverType);
+
+		for (const [nodeType, serverSet] of this._nodeToServerTypes) {
+			serverSet.delete(serverType);
+			if (serverSet.size === 0) {
+				this._nodeToServerTypes.delete(nodeType);
+			}
+		}
+
+		return RESULT_SUCCESS;
+	}
+
+	hasServer<K extends ServerBase>(serverType: ObjectConstructor<K>): boolean {
+		return this._servers.has(serverType);
+	}
+
+	update(deltaTime = 0): void {
+		this._update(deltaTime);
+	}
+
+	protected _update(deltaTime: number): void {
+		for (const server of this._servers.values()) {
+			server.update(deltaTime);
+		}
+
+		const canAutoInitRenderer =
+			typeof window !== 'undefined' &&
+			typeof window.document !== 'undefined';
+
+		if (Renderer3D.hasInstance() || canAutoInitRenderer) {
+			Renderer3D.Instance.render();
+		}
+		if (Renderer2D.hasInstance() || canAutoInitRenderer) {
+			Renderer2D.Instance.render();
+		}
 	}
 
 	/**
