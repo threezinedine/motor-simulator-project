@@ -4,4 +4,4 @@ export {
 	type CameraProjection,
 	type Camera3DOptions,
 } from './camera-3d';
-export { Mesh } from './mesh';
+export { Mesh, type MeshOptions } from './mesh';
