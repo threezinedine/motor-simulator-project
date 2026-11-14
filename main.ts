@@ -6,6 +6,7 @@ import {
 	Mesh,
 	Light,
 	Texture2D,
+	Clickable,
 	MeshResource,
 	ImageResource,
 	Camera3DServer,
@@ -13,6 +14,7 @@ import {
 	MeshServer,
 	LightServer,
 	Texture2DServer,
+	ClickableServer,
 } from '@/index';
 
 // Register servers & node types with their corresponding servers
@@ -22,12 +24,14 @@ sceneManager.registerServer(Camera2DServer);
 sceneManager.registerServer(MeshServer);
 sceneManager.registerServer(LightServer);
 sceneManager.registerServer(Texture2DServer);
+sceneManager.registerServer(ClickableServer);
 
 sceneManager.registerNode(Camera3D, Camera3DServer);
 sceneManager.registerNode(Camera2D, Camera2DServer);
 sceneManager.registerNode(Mesh, MeshServer);
 sceneManager.registerNode(Light, LightServer);
 sceneManager.registerNode(Texture2D, Texture2DServer);
+sceneManager.registerNode(Clickable, ClickableServer);
 
 // Build scene hierarchy
 const rootNode = new Node3D('Root');
@@ -80,6 +84,17 @@ sampleTextureNode.setPosition(
 );
 rootNode.addChild(sampleTextureNode);
 void sampleTextureNode.load();
+
+// Clickable node attached to the cross button
+const crossButtonClickable = new Clickable({
+	debugName: 'CrossButtonClickable',
+	width: 64,
+	height: 64,
+	onClick: (pos, node) => {
+		console.log(`[${node.DebugName}] Clicked at (${pos.x}, ${pos.y})`);
+	},
+});
+sampleTextureNode.addChild(crossButtonClickable);
 
 // Light nodes
 const ambientLightNode = new Light({

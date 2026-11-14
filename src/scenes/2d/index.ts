@@ -6,3 +6,8 @@ export {
 	type Texture2DOptions,
 	type TextureOptions,
 } from './texture-2d';
+export {
+	Clickable,
+	type ClickableOptions,
+	type ClickCallback,
+} from './clickable';
