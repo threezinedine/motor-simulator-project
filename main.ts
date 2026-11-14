@@ -4,25 +4,32 @@ import {
 	SceneManager,
 	Node3D,
 	Camera3D,
+	Camera2D,
 	Mesh,
 	Light,
+	Texture2D,
 	MeshResource,
+	ImageResource,
 	Camera3DServer,
+	Camera2DServer,
 	MeshServer,
 	LightServer,
+	Texture2DServer,
 } from '@/index';
 
 // Register node types with their corresponding servers
 const sceneManager = SceneManager.Instance;
 sceneManager.registerNode(Camera3D, Camera3DServer);
+sceneManager.registerNode(Camera2D, Camera2DServer);
 sceneManager.registerNode(Mesh, MeshServer);
 sceneManager.registerNode(Light, LightServer);
+sceneManager.registerNode(Texture2D, Texture2DServer);
 
 // Build scene hierarchy
 const rootNode = new Node3D('Root');
 sceneManager.setRootNode(rootNode);
 
-// Camera node
+// 3D Camera node
 const cameraNode = new Camera3D({
 	debugName: 'MainCamera',
 	fov: 75,
@@ -32,6 +39,14 @@ const cameraNode = new Camera3D({
 });
 cameraNode.setPosition(2, 2, 3);
 rootNode.addChild(cameraNode);
+
+// 2D Camera node
+const camera2DNode = new Camera2D({
+	debugName: 'MainCamera2D',
+	width: window.innerWidth,
+	height: window.innerHeight,
+});
+rootNode.addChild(camera2DNode);
 
 // Cube resource & Mesh node
 const cubeResource = new MeshResource('/assets/cube.obj');
@@ -45,6 +60,20 @@ const cubeNode = new Mesh(cubeResource, {
 });
 rootNode.addChild(cubeNode);
 void cubeNode.load();
+
+// Sample 2D Texture node (cross button in top-right corner)
+const sampleImageResource = new ImageResource('/assets/sample.png');
+const sampleTextureNode = new Texture2D(sampleImageResource, {
+	debugName: 'CrossButtonTexture',
+	width: 64,
+	height: 64,
+});
+sampleTextureNode.setPosition(
+	window.innerWidth / 2 - 48,
+	window.innerHeight / 2 - 48
+);
+rootNode.addChild(sampleTextureNode);
+void sampleTextureNode.load();
 
 // Light nodes
 const ambientLightNode = new Light({
@@ -67,13 +96,17 @@ rootNode.addChild(directionalLightNode);
 // Retrieve active servers
 const meshServer = sceneManager.getServer(MeshServer)!;
 const cameraServer = sceneManager.getServer(Camera3DServer)!;
+const camera2DServer = sceneManager.getServer(Camera2DServer)!;
+const texture2DServer = sceneManager.getServer(Texture2DServer)!;
 const threeScene = meshServer.ThreeScene;
+const threeScene2D = texture2DServer.ThreeScene;
 const activeThreeCamera = cameraServer.ActiveCamera!.ThreeCamera;
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.autoClear = false;
 document.body.appendChild(renderer.domElement);
 
 // OrbitControls (rotate with left-click drag, zoom with scroll, pan with right-click drag)
@@ -83,6 +116,11 @@ controls.enableDamping = true;
 // Handle window resize
 window.addEventListener('resize', () => {
 	cameraServer.setAspect(window.innerWidth / window.innerHeight);
+	camera2DServer.setViewportSize(window.innerWidth, window.innerHeight);
+	sampleTextureNode.setPosition(
+		window.innerWidth / 2 - 48,
+		window.innerHeight / 2 - 48
+	);
 	renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
@@ -91,9 +129,17 @@ function animate() {
 	requestAnimationFrame(animate);
 	controls.update();
 
+	renderer.clear();
+
 	const currentCamera = cameraServer.ActiveCamera;
 	if (currentCamera) {
 		renderer.render(threeScene, currentCamera.ThreeCamera);
+	}
+
+	const currentCamera2D = camera2DServer.ActiveCamera;
+	if (currentCamera2D) {
+		renderer.clearDepth();
+		renderer.render(threeScene2D, currentCamera2D.ThreeCamera);
 	}
 }
 
