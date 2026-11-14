@@ -1,4 +1,5 @@
 import { ObjectBase } from '@/common';
+import { SceneManager } from './scene-manager';
 
 export class NodeBase extends ObjectBase {
 	private _parent: NodeBase | null = null;
@@ -249,11 +250,13 @@ export class NodeBase extends ObjectBase {
 	}
 
 	onActivate(): void {
+		SceneManager.Instance.notifyNodeActivated(this);
 		this._onActivate();
 	}
 	protected _onActivate(): void {}
 
 	onDeactivate(): void {
+		SceneManager.Instance.notifyNodeDeactivated(this);
 		this._onDeactivate();
 	}
 	protected _onDeactivate(): void {}

@@ -1,6 +1,5 @@
 import { ObjectBase } from './object-base';
-
-export type ObjectConstructor<T extends ObjectBase = ObjectBase> = new () => T;
+import type { ObjectConstructor } from '@/types';
 
 export class ObjectFactory<T extends ObjectBase> {
 	private readonly _type: ObjectConstructor<T>;

@@ -1,5 +1,6 @@
 import { ObjectBase } from './object-base';
-import { ObjectConstructor, ObjectFactory } from './object-factory';
+import { ObjectFactory } from './object-factory';
+import type { ObjectConstructor } from '@/types';
 
 export class ObjectFactoryManager {
 	private static _instance: ObjectFactoryManager | null = null;
