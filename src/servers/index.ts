@@ -5,6 +5,7 @@ export {
 	TextureServer,
 	ClickableServer,
 	ClickableManager,
+	type QueuedPointerEvent,
 	type QueuedClickEvent,
 } from './2d';
 export { MeshServer, Camera3DServer, LightServer } from './3d';

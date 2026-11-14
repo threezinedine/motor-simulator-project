@@ -102,5 +102,61 @@ describe('Clickable & ClickableServer', () => {
 			sceneManager.update();
 			expect(bottomSpy).toHaveBeenCalledTimes(1);
 		});
+
+		it('triggers onHoverEnter and onHoverExit on top-most Clickable as pointer moves or node disables', () => {
+			const cam2D = new Camera2D({ width: 800, height: 600 });
+			root.addChild(cam2D);
+
+			const enterBottom = vi.fn();
+			const exitBottom = vi.fn();
+			const enterTop = vi.fn();
+			const exitTop = vi.fn();
+
+			const bottomButton = new Clickable({
+				debugName: 'BottomButton',
+				width: 100,
+				height: 100,
+				zIndex: 0,
+				onHoverEnter: enterBottom,
+				onHoverExit: exitBottom,
+			});
+			const topButton = new Clickable({
+				debugName: 'TopButton',
+				width: 100,
+				height: 100,
+				zIndex: 1,
+				onHoverEnter: enterTop,
+				onHoverExit: exitTop,
+			});
+
+			root.addChild(bottomButton);
+			root.addChild(topButton);
+
+			const clickableServer = sceneManager.getServer(ClickableServer)!;
+
+			// Move pointer onto center (400, 300) -> hovers topButton
+			clickableServer.enqueueScreenMove(400, 300);
+			sceneManager.update();
+			expect(topButton.IsHovered).toBe(true);
+			expect(bottomButton.IsHovered).toBe(false);
+			expect(enterTop).toHaveBeenCalledTimes(1);
+			expect(enterBottom).not.toHaveBeenCalled();
+
+			// Disabling topButton exits topButton and enters bottomButton on update
+			topButton.Disable();
+			expect(topButton.IsHovered).toBe(false);
+			expect(exitTop).toHaveBeenCalledTimes(1);
+
+			sceneManager.update();
+			expect(bottomButton.IsHovered).toBe(true);
+			expect(enterBottom).toHaveBeenCalledTimes(1);
+
+			// Move pointer outside bounds (10, 10) -> exits bottomButton
+			clickableServer.enqueueScreenMove(10, 10);
+			sceneManager.update();
+			expect(bottomButton.IsHovered).toBe(false);
+			expect(exitBottom).toHaveBeenCalledTimes(1);
+			expect(clickableServer.HoveredNode).toBeNull();
+		});
 	});
 });

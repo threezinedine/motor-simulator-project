@@ -93,6 +93,14 @@ const crossButtonClickable = new Clickable({
 	onClick: (pos, node) => {
 		console.log(`[${node.DebugName}] Clicked at (${pos.x}, ${pos.y})`);
 	},
+	onHoverEnter: (pos, node) => {
+		console.log(`[${node.DebugName}] Hover enter at (${pos.x}, ${pos.y})`);
+		sampleTextureNode.setScale(1.1, 1.1);
+	},
+	onHoverExit: (pos, node) => {
+		console.log(`[${node.DebugName}] Hover exit at (${pos.x}, ${pos.y})`);
+		sampleTextureNode.setScale(1, 1);
+	},
 });
 sampleTextureNode.addChild(crossButtonClickable);
 

@@ -3,5 +3,6 @@ export { Texture2DServer, TextureServer } from './texture-2d-server';
 export {
 	ClickableServer,
 	ClickableManager,
+	type QueuedPointerEvent,
 	type QueuedClickEvent,
 } from './clickable-server';

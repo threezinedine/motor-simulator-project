@@ -10,4 +10,5 @@ export {
 	Clickable,
 	type ClickableOptions,
 	type ClickCallback,
+	type HoverCallback,
 } from './clickable';
