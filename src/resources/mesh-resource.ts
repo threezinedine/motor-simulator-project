@@ -1,13 +1,14 @@
 import * as THREE from 'three';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { Result, ResultStatus, RESULT_SUCCESS } from '@/types';
+import { Result, ResultStatus, RESULT_SUCCESS, isResultSuccess } from '@/types';
 import { Resource } from './resource';
+import { ImageResource } from './image-resource';
 
 export class MeshResource extends Resource {
 	private readonly _meshFilePath: string;
 	private readonly _textureFilePath?: string;
 	private _geometry: THREE.BufferGeometry | null = null;
-	private _texture: THREE.Texture | null = null;
+	private _imageResource: ImageResource | null = null;
 
 	constructor(meshFilePath = '/assets/cube.obj', textureFilePath?: string) {
 		super(`MeshResource: ${meshFilePath}`);
@@ -28,7 +29,11 @@ export class MeshResource extends Resource {
 	}
 
 	get Texture(): THREE.Texture | null {
-		return this._texture;
+		return this._imageResource?.Texture ?? null;
+	}
+
+	get ImageResource(): ImageResource | null {
+		return this._imageResource;
 	}
 
 	protected override async _Load(): Promise<Result> {
@@ -43,13 +48,7 @@ export class MeshResource extends Resource {
 		const loader = new OBJLoader();
 		const group = loader.parse(text);
 
-		let foundGeometry: THREE.BufferGeometry | null = null;
-		group.traverse((child) => {
-			if (!foundGeometry && child instanceof THREE.Mesh) {
-				foundGeometry = child.geometry.clone();
-			}
-		});
-
+		const foundGeometry = this.extractFirstGeometry(group);
 		if (!foundGeometry) {
 			return {
 				status: ResultStatus.FAILURE,
@@ -60,8 +59,14 @@ export class MeshResource extends Resource {
 		this._geometry = foundGeometry;
 
 		if (this._textureFilePath) {
-			const texLoader = new THREE.TextureLoader();
-			this._texture = await texLoader.loadAsync(this._textureFilePath);
+			this._imageResource = new ImageResource(this._textureFilePath);
+			const texResult = await this._imageResource.Load();
+			if (!isResultSuccess(texResult)) {
+				this._geometry.dispose();
+				this._geometry = null;
+				this._imageResource = null;
+				return texResult;
+			}
 		}
 
 		return RESULT_SUCCESS;
@@ -72,11 +77,23 @@ export class MeshResource extends Resource {
 			this._geometry.dispose();
 			this._geometry = null;
 		}
-		if (this._texture) {
-			this._texture.dispose();
-			this._texture = null;
+		if (this._imageResource) {
+			await this._imageResource.Unload();
+			this._imageResource = null;
 		}
 		return RESULT_SUCCESS;
+	}
+
+	private extractFirstGeometry(
+		group: THREE.Group
+	): THREE.BufferGeometry | null {
+		let foundGeometry: THREE.BufferGeometry | null = null;
+		group.traverse((child) => {
+			if (!foundGeometry && child instanceof THREE.Mesh) {
+				foundGeometry = child.geometry.clone();
+			}
+		});
+		return foundGeometry;
 	}
 
 	private async fetchMeshText(filePath: string): Promise<string> {
