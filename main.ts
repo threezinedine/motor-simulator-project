@@ -5,15 +5,18 @@ import {
 	Node3D,
 	Camera3D,
 	Mesh,
+	Light,
 	MeshResource,
 	Camera3DServer,
 	MeshServer,
+	LightServer,
 } from '@/index';
 
 // Register node types with their corresponding servers
 const sceneManager = SceneManager.Instance;
 sceneManager.registerNode(Camera3D, Camera3DServer);
 sceneManager.registerNode(Mesh, MeshServer);
+sceneManager.registerNode(Light, LightServer);
 
 // Build scene hierarchy
 const rootNode = new Node3D('Root');
@@ -43,19 +46,29 @@ const cubeNode = new Mesh(cubeResource, {
 rootNode.addChild(cubeNode);
 void cubeNode.load();
 
+// Light nodes
+const ambientLightNode = new Light({
+	debugName: 'AmbientLight',
+	type: 'ambient',
+	color: 0xffffff,
+	intensity: 0.6,
+});
+rootNode.addChild(ambientLightNode);
+
+const directionalLightNode = new Light({
+	debugName: 'DirectionalLight',
+	type: 'directional',
+	color: 0xffffff,
+	intensity: 1.2,
+});
+directionalLightNode.setPosition(5, 5, 5);
+rootNode.addChild(directionalLightNode);
+
 // Retrieve active servers
 const meshServer = sceneManager.getServer(MeshServer)!;
 const cameraServer = sceneManager.getServer(Camera3DServer)!;
 const threeScene = meshServer.ThreeScene;
 const activeThreeCamera = cameraServer.ActiveCamera!.ThreeCamera;
-
-// Lights
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-threeScene.add(ambientLight);
-
-const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-directionalLight.position.set(5, 5, 5);
-threeScene.add(directionalLight);
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });

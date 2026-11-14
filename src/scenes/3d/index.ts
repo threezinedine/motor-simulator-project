@@ -5,3 +5,4 @@ export {
 	type Camera3DOptions,
 } from './camera-3d';
 export { Mesh, type MeshOptions } from './mesh';
+export { Light, type LightType, type LightOptions } from './light';

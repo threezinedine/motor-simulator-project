@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import { ServerBase } from '@/servers/server-base';
 import { Mesh } from '@/scenes/3d/mesh';
+import { SceneManager } from '@/scenes/scene-manager';
+import { LightServer } from './light-server';
 
 export class MeshServer extends ServerBase<Mesh> {
 	private readonly _threeScene: THREE.Scene;
@@ -9,6 +11,11 @@ export class MeshServer extends ServerBase<Mesh> {
 		super(debugName);
 		this._threeScene = new THREE.Scene();
 		this._threeScene.background = new THREE.Color(0x1a1a2e);
+
+		const lightServer = SceneManager.Instance.getServer(LightServer);
+		if (lightServer) {
+			lightServer.setThreeScene(this._threeScene);
+		}
 	}
 
 	get ThreeScene(): THREE.Scene {
