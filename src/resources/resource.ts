@@ -17,27 +17,47 @@ export class Resource extends ObjectBase {
 
 	async Load(): Promise<Result> {
 		if (this.status === 'loaded') {
+			console.debug(
+				`[Resource:${this.DebugName}] Already loaded, skipping Load().`
+			);
 			return RESULT_SUCCESS;
 		}
 
 		if (this.status === 'loading' || this.status === 'unloading') {
+			const errorMessage = `Cannot load resource '${this.DebugName}' while status is '${this.status}'.`;
+			console.warn(`[Resource:${this.DebugName}] ${errorMessage}`);
 			return {
 				status: ResultStatus.FAILURE,
-				errorMessage: `Cannot load resource '${this.DebugName}' while status is '${this.status}'.`,
+				errorMessage,
 			};
 		}
 
+		console.debug(`[Resource:${this.DebugName}] Loading started...`);
 		this.status = 'loading';
 		try {
 			const result = await this._Load();
-			this.status = isResultSuccess(result) ? 'loaded' : 'failed';
+			if (isResultSuccess(result)) {
+				this.status = 'loaded';
+				console.debug(
+					`[Resource:${this.DebugName}] Loaded successfully.`
+				);
+			} else {
+				this.status = 'failed';
+				console.error(
+					`[Resource:${this.DebugName}] Load failed: ${result.errorMessage ?? 'Unknown error'}`
+				);
+			}
 			return result;
 		} catch (error) {
 			this.status = 'failed';
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			console.error(
+				`[Resource:${this.DebugName}] Exception during Load: ${errorMessage}`
+			);
 			return {
 				status: ResultStatus.FAILURE,
-				errorMessage:
-					error instanceof Error ? error.message : String(error),
+				errorMessage,
 			};
 		}
 	}
@@ -47,27 +67,47 @@ export class Resource extends ObjectBase {
 
 	async Unload(): Promise<Result> {
 		if (this.status === 'unloaded') {
+			console.debug(
+				`[Resource:${this.DebugName}] Already unloaded, skipping Unload().`
+			);
 			return RESULT_SUCCESS;
 		}
 
 		if (this.status !== 'loaded') {
+			const errorMessage = `Cannot unload resource '${this.DebugName}' while status is '${this.status}'.`;
+			console.warn(`[Resource:${this.DebugName}] ${errorMessage}`);
 			return {
 				status: ResultStatus.FAILURE,
-				errorMessage: `Cannot unload resource '${this.DebugName}' while status is '${this.status}'.`,
+				errorMessage,
 			};
 		}
 
+		console.debug(`[Resource:${this.DebugName}] Unloading started...`);
 		this.status = 'unloading';
 		try {
 			const result = await this._Unload();
-			this.status = isResultSuccess(result) ? 'unloaded' : 'failed';
+			if (isResultSuccess(result)) {
+				this.status = 'unloaded';
+				console.debug(
+					`[Resource:${this.DebugName}] Unloaded successfully.`
+				);
+			} else {
+				this.status = 'failed';
+				console.error(
+					`[Resource:${this.DebugName}] Unload failed: ${result.errorMessage ?? 'Unknown error'}`
+				);
+			}
 			return result;
 		} catch (error) {
 			this.status = 'failed';
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			console.error(
+				`[Resource:${this.DebugName}] Exception during Unload: ${errorMessage}`
+			);
 			return {
 				status: ResultStatus.FAILURE,
-				errorMessage:
-					error instanceof Error ? error.message : String(error),
+				errorMessage,
 			};
 		}
 	}
