@@ -106,5 +106,19 @@ describe('Camera3D', () => {
 			expect(camera.Rotation.y).toBeCloseTo(0);
 			expect(camera.Rotation.z).toBeCloseTo(0);
 		});
+
+		it('supports OrbitControls configuration and update method', () => {
+			expect(camera.EnableOrbitControls).toBe(true);
+			expect(camera.EnableDamping).toBe(true);
+
+			camera.EnableOrbitControls = false;
+			expect(camera.EnableOrbitControls).toBe(false);
+			expect(camera.OrbitControls).toBeNull();
+
+			camera.EnableDamping = false;
+			expect(camera.EnableDamping).toBe(false);
+
+			camera.update();
+		});
 	});
 });

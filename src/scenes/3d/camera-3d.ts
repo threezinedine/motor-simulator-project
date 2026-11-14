@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Node3D } from './node-3d';
 import { Vector3 } from '@/types';
 
@@ -12,6 +13,9 @@ export interface Camera3DOptions {
 	near?: number;
 	far?: number;
 	orthoSize?: number;
+	orbitControls?: boolean;
+	enableDamping?: boolean;
+	domElement?: HTMLElement | null;
 }
 
 export class Camera3D extends Node3D {
@@ -21,6 +25,11 @@ export class Camera3D extends Node3D {
 	private _near: number;
 	private _far: number;
 	private _orthoSize: number;
+	private _enableOrbitControls: boolean;
+	private _enableDamping: boolean;
+	private _domElement: HTMLElement | null;
+	private _orbitControls: OrbitControls | null = null;
+	private _isSyncingFromOrbitControls = false;
 
 	private readonly _perspectiveCamera: THREE.PerspectiveCamera;
 	private readonly _orthographicCamera: THREE.OrthographicCamera;
@@ -37,6 +46,15 @@ export class Camera3D extends Node3D {
 		this._near = opts.near ?? 0.1;
 		this._far = opts.far ?? 1000;
 		this._orthoSize = opts.orthoSize ?? 5;
+		this._enableOrbitControls = opts.orbitControls ?? true;
+		this._enableDamping = opts.enableDamping ?? true;
+		this._domElement =
+			opts.domElement !== undefined
+				? opts.domElement
+				: typeof window !== 'undefined' &&
+					  typeof window.document !== 'undefined'
+					? window.document.body
+					: null;
 
 		this._perspectiveCamera = new THREE.PerspectiveCamera(
 			this._fov,
@@ -57,6 +75,7 @@ export class Camera3D extends Node3D {
 		);
 
 		this.syncThreeCameras();
+		this.rebuildOrbitControls();
 	}
 
 	get Projection(): CameraProjection {
@@ -121,12 +140,79 @@ export class Camera3D extends Node3D {
 		return this._orthographicCamera;
 	}
 
+	get OrbitControls(): OrbitControls | null {
+		return this._orbitControls;
+	}
+
+	get EnableOrbitControls(): boolean {
+		return this._enableOrbitControls;
+	}
+
+	set EnableOrbitControls(value: boolean) {
+		this.setEnableOrbitControls(value);
+	}
+
+	get EnableDamping(): boolean {
+		return this._enableDamping;
+	}
+
+	set EnableDamping(value: boolean) {
+		this.setEnableDamping(value);
+	}
+
+	get DomElement(): HTMLElement | null {
+		return this._domElement;
+	}
+
+	set DomElement(element: HTMLElement | null) {
+		this.setDomElement(element);
+	}
+
+	setEnableOrbitControls(enabled: boolean): void {
+		if (this._enableOrbitControls === enabled) {
+			return;
+		}
+		this._enableOrbitControls = enabled;
+		this.rebuildOrbitControls();
+	}
+
+	setEnableDamping(enabled: boolean): void {
+		this._enableDamping = enabled;
+		if (this._orbitControls) {
+			this._orbitControls.enableDamping = enabled;
+		}
+	}
+
+	setDomElement(element: HTMLElement | null): void {
+		if (this._domElement === element) {
+			return;
+		}
+		this._domElement = element;
+		this.rebuildOrbitControls();
+	}
+
+	update(): void {
+		if (this._orbitControls && this._orbitControls.enabled) {
+			this._orbitControls.update();
+		}
+	}
+
+	disposeOrbitControls(): void {
+		if (this._orbitControls) {
+			this._orbitControls.dispose();
+			this._orbitControls = null;
+		}
+	}
+
 	setProjection(projection: CameraProjection): void {
 		if (this._projection === projection) {
 			return;
 		}
 		this._projection = projection;
 		this.updateProjectionMatrix();
+		if (this._orbitControls) {
+			this._orbitControls.object = this.ThreeCamera;
+		}
 	}
 
 	setFov(fov: number): void {
@@ -228,7 +314,58 @@ export class Camera3D extends Node3D {
 	}
 
 	protected override _onTransformChanged(): void {
-		this.syncThreeCameras();
+		if (!this._isSyncingFromOrbitControls) {
+			this.syncThreeCameras();
+		}
+	}
+
+	protected override _onEnable(): void {
+		if (this._orbitControls) {
+			this._orbitControls.enabled = true;
+		}
+	}
+
+	protected override _onDisable(): void {
+		if (this._orbitControls) {
+			this._orbitControls.enabled = false;
+		}
+	}
+
+	private rebuildOrbitControls(): void {
+		this.disposeOrbitControls();
+
+		if (!this._enableOrbitControls || !this._domElement) {
+			return;
+		}
+
+		this._orbitControls = new OrbitControls(
+			this.ThreeCamera,
+			this._domElement
+		);
+		this._orbitControls.enableDamping = this._enableDamping;
+		this._orbitControls.enabled = this.IsEnable;
+		this._orbitControls.addEventListener('change', () => {
+			if (this._isSyncingFromOrbitControls) {
+				return;
+			}
+			this._isSyncingFromOrbitControls = true;
+			const cam = this.ThreeCamera;
+			this.setPosition(cam.position.x, cam.position.y, cam.position.z);
+			this.setRotation(
+				cam.rotation.x,
+				cam.rotation.y,
+				cam.rotation.z,
+				cam.rotation.order
+			);
+			const otherCam =
+				this._projection === 'perspective'
+					? this._orthographicCamera
+					: this._perspectiveCamera;
+			otherCam.position.copy(cam.position);
+			otherCam.rotation.copy(cam.rotation);
+			otherCam.updateMatrixWorld(true);
+			this._isSyncingFromOrbitControls = false;
+		});
 	}
 
 	private syncThreeCameras(): void {

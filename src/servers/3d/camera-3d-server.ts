@@ -66,6 +66,13 @@ export class Camera3DServer extends ServerBase<Camera3D> {
 		}
 	}
 
+	update(): void {
+		const activeCamera = this.ActiveCamera;
+		if (activeCamera) {
+			activeCamera.update();
+		}
+	}
+
 	protected override _onNodeAdded(node: Camera3D): void {
 		if (!this._activeCamera) {
 			this._activeCamera = node;

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
 	SceneManager,
 	Node3D,
@@ -29,13 +28,15 @@ sceneManager.registerNode(Texture2D, Texture2DServer);
 const rootNode = new Node3D('Root');
 sceneManager.setRootNode(rootNode);
 
-// 3D Camera node
+// 3D Camera node (with internal OrbitControls enabled)
 const cameraNode = new Camera3D({
 	debugName: 'MainCamera',
 	fov: 75,
 	aspect: window.innerWidth / window.innerHeight,
 	near: 0.1,
 	far: 1000,
+	orbitControls: true,
+	enableDamping: true,
 });
 cameraNode.setPosition(2, 2, 3);
 rootNode.addChild(cameraNode);
@@ -100,7 +101,6 @@ const camera2DServer = sceneManager.getServer(Camera2DServer)!;
 const texture2DServer = sceneManager.getServer(Texture2DServer)!;
 const threeScene = meshServer.ThreeScene;
 const threeScene2D = texture2DServer.ThreeScene;
-const activeThreeCamera = cameraServer.ActiveCamera!.ThreeCamera;
 
 // Renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -108,10 +108,6 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.autoClear = false;
 document.body.appendChild(renderer.domElement);
-
-// OrbitControls (rotate with left-click drag, zoom with scroll, pan with right-click drag)
-const controls = new OrbitControls(activeThreeCamera, renderer.domElement);
-controls.enableDamping = true;
 
 // Handle window resize
 window.addEventListener('resize', () => {
@@ -127,7 +123,7 @@ window.addEventListener('resize', () => {
 // Animation loop
 function animate() {
 	requestAnimationFrame(animate);
-	controls.update();
+	cameraServer.update();
 
 	renderer.clear();
 
