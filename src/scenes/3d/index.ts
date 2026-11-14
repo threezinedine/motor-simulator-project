@@ -1,3 +1,7 @@
 export { Node3D } from './node-3d';
-export { Camera3D } from './camera-3d';
+export {
+	Camera3D,
+	type CameraProjection,
+	type Camera3DOptions,
+} from './camera-3d';
 export { Mesh } from './mesh';
