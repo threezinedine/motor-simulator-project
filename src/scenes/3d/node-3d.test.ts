@@ -5,7 +5,7 @@ import { Node3D } from './node-3d';
 class TestNode3D extends Node3D {
 	public transformChangeCount = 0;
 
-	protected override onTransformChanged_Impl(): void {
+	protected override _onTransformChanged(): void {
 		this.transformChangeCount++;
 	}
 }

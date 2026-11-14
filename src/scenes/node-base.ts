@@ -6,8 +6,8 @@ export class NodeBase extends ObjectBase {
 	private _isSelfEnable = true;
 	private _isRoot = false;
 
-	constructor() {
-		super();
+	constructor(debugName = 'NodeBase') {
+		super(debugName);
 	}
 
 	get Parent(): NodeBase | null {
@@ -146,19 +146,19 @@ export class NodeBase extends ObjectBase {
 	}
 
 	onChildAdded(child: NodeBase): void {
-		this.onChildAdded_Impl(child);
+		this._onChildAdded(child);
 	}
-	protected onChildAdded_Impl(_child: NodeBase): void {}
+	protected _onChildAdded(_child: NodeBase): void {}
 
 	onChildRemoved(child: NodeBase): void {
-		this.onChildRemoved_Impl(child);
+		this._onChildRemoved(child);
 	}
-	protected onChildRemoved_Impl(_child: NodeBase): void {}
+	protected _onChildRemoved(_child: NodeBase): void {}
 
 	onParentChanged(newParent: NodeBase | null): void {
-		this.onParentChanged_Impl(newParent);
+		this._onParentChanged(newParent);
 	}
-	protected onParentChanged_Impl(_newParent: NodeBase | null): void {}
+	protected _onParentChanged(_newParent: NodeBase | null): void {}
 
 	Enable(): void {
 		if (this._isSelfEnable) {
@@ -206,24 +206,24 @@ export class NodeBase extends ObjectBase {
 	}
 
 	onSelfEnable(): void {
-		this.onSelfEnable_Impl();
+		this._onSelfEnable();
 	}
-	protected onSelfEnable_Impl(): void {}
+	protected _onSelfEnable(): void {}
 
 	onSelfDisable(): void {
-		this.onSelfDisable_Impl();
+		this._onSelfDisable();
 	}
-	protected onSelfDisable_Impl(): void {}
+	protected _onSelfDisable(): void {}
 
 	onEnable(): void {
-		this.onEnable_Impl();
+		this._onEnable();
 	}
-	protected onEnable_Impl(): void {}
+	protected _onEnable(): void {}
 
 	onDisable(): void {
-		this.onDisable_Impl();
+		this._onDisable();
 	}
-	protected onDisable_Impl(): void {}
+	protected _onDisable(): void {}
 
 	asRoot(): void {
 		if (this._parent || this._isRoot) {
@@ -249,12 +249,12 @@ export class NodeBase extends ObjectBase {
 	}
 
 	onActivate(): void {
-		this.onActivate_Impl();
+		this._onActivate();
 	}
-	protected onActivate_Impl(): void {}
+	protected _onActivate(): void {}
 
 	onDeactivate(): void {
-		this.onDeactivate_Impl();
+		this._onDeactivate();
 	}
-	protected onDeactivate_Impl(): void {}
+	protected _onDeactivate(): void {}
 }

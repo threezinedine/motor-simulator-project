@@ -14,8 +14,8 @@ export class Node3D extends NodeBase {
 	private readonly _localMatrix = new THREE.Matrix4();
 	private readonly _worldMatrix = new THREE.Matrix4();
 
-	constructor() {
-		super();
+	constructor(debugName = 'Node3D') {
+		super(debugName);
 		this.recalculateTransform();
 	}
 
@@ -108,7 +108,7 @@ export class Node3D extends NodeBase {
 		this.updateWorldTransform();
 	}
 
-	protected override onParentChanged_Impl(_newParent: NodeBase | null): void {
+	protected override _onParentChanged(_newParent: NodeBase | null): void {
 		this.updateWorldTransform();
 	}
 
@@ -202,7 +202,7 @@ export class Node3D extends NodeBase {
 	}
 
 	onTransformChanged(): void {
-		this.onTransformChanged_Impl();
+		this._onTransformChanged();
 	}
-	protected onTransformChanged_Impl(): void {}
+	protected _onTransformChanged(): void {}
 }

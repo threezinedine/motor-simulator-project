@@ -12,39 +12,39 @@ class TestNode extends NodeBase {
 	public activateCount = 0;
 	public deactivateCount = 0;
 
-	protected override onChildAdded_Impl(child: NodeBase): void {
+	protected override _onChildAdded(child: NodeBase): void {
 		this.addedChildren.push(child);
 	}
 
-	protected override onChildRemoved_Impl(child: NodeBase): void {
+	protected override _onChildRemoved(child: NodeBase): void {
 		this.removedChildren.push(child);
 	}
 
-	protected override onParentChanged_Impl(newParent: NodeBase | null): void {
+	protected override _onParentChanged(newParent: NodeBase | null): void {
 		this.parentHistory.push(newParent);
 	}
 
-	protected override onSelfEnable_Impl(): void {
+	protected override _onSelfEnable(): void {
 		this.selfEnableCount++;
 	}
 
-	protected override onSelfDisable_Impl(): void {
+	protected override _onSelfDisable(): void {
 		this.selfDisableCount++;
 	}
 
-	protected override onEnable_Impl(): void {
+	protected override _onEnable(): void {
 		this.enableCount++;
 	}
 
-	protected override onDisable_Impl(): void {
+	protected override _onDisable(): void {
 		this.disableCount++;
 	}
 
-	protected override onActivate_Impl(): void {
+	protected override _onActivate(): void {
 		this.activateCount++;
 	}
 
-	protected override onDeactivate_Impl(): void {
+	protected override _onDeactivate(): void {
 		this.deactivateCount++;
 	}
 }
@@ -80,11 +80,11 @@ describe('NodeBase', () => {
 			const callOrder: string[] = [];
 			vi.spyOn(parent, 'onChildAdded').mockImplementation((c) => {
 				callOrder.push('parent.onChildAdded');
-				parent['onChildAdded_Impl'](c);
+				parent['_onChildAdded'](c);
 			});
 			vi.spyOn(child1, 'onParentChanged').mockImplementation((p) => {
 				callOrder.push('child.onParentChanged');
-				child1['onParentChanged_Impl'](p);
+				child1['_onParentChanged'](p);
 			});
 
 			parent.addChild(child1);
@@ -160,11 +160,11 @@ describe('NodeBase', () => {
 			const callOrder: string[] = [];
 			vi.spyOn(parent, 'onChildRemoved').mockImplementation((c) => {
 				callOrder.push('parent.onChildRemoved');
-				parent['onChildRemoved_Impl'](c);
+				parent['_onChildRemoved'](c);
 			});
 			vi.spyOn(child1, 'onParentChanged').mockImplementation((p) => {
 				callOrder.push('child.onParentChanged');
-				child1['onParentChanged_Impl'](p);
+				child1['_onParentChanged'](p);
 			});
 
 			parent.removeChild(child1);
@@ -275,11 +275,11 @@ describe('NodeBase', () => {
 			const callOrder: string[] = [];
 			vi.spyOn(parent, 'onSelfDisable').mockImplementation(() => {
 				callOrder.push('onSelfDisable');
-				parent['onSelfDisable_Impl']();
+				parent['_onSelfDisable']();
 			});
 			vi.spyOn(parent, 'onDisable').mockImplementation(() => {
 				callOrder.push('onDisable');
-				parent['onDisable_Impl']();
+				parent['_onDisable']();
 			});
 
 			parent.Disable();
@@ -305,11 +305,11 @@ describe('NodeBase', () => {
 			const callOrder: string[] = [];
 			vi.spyOn(parent, 'onSelfEnable').mockImplementation(() => {
 				callOrder.push('onSelfEnable');
-				parent['onSelfEnable_Impl']();
+				parent['_onSelfEnable']();
 			});
 			vi.spyOn(parent, 'onEnable').mockImplementation(() => {
 				callOrder.push('onEnable');
-				parent['onEnable_Impl']();
+				parent['_onEnable']();
 			});
 
 			parent.Enable();
